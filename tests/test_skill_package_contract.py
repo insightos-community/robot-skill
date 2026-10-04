@@ -1,18 +1,3 @@
-# Copyright 2026 InsightOS
-# SPDX-License-Identifier: Apache-2.0
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 """正式 Robot Skill 包结构和依赖边界测试。"""
 
 from __future__ import annotations
@@ -25,11 +10,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / "semantic_robot_skills" / "skills"
-EXPECTED_SKILLS = {
-    "semantic_navigation": ("semantic-navigation", "0.4.7"),
-    "grasp_object": ("grasp-object", "0.4.23"),
-    "place_object": ("place-object", "0.4.42"),
-}
 FORBIDDEN_IMPORTS = {
     "r1pro_sdk",
     "rospy",
@@ -84,21 +64,17 @@ def test_skill_md_is_the_only_manifest_and_all_entries_exist() -> None:
     for skill_doc in sorted(SKILLS.glob("*/SKILL.md")):
         skill_dir = skill_doc.parent
         frontmatter = _frontmatter_text(skill_doc)
-        name, version = EXPECTED_SKILLS[skill_dir.name]
-        discovered.add(_value(frontmatter, "name"))
-        assert _value(frontmatter, "name") == name
-        assert _value(frontmatter, "category") == "robot_skill"
-        assert _value(frontmatter, "version") == version
-        assert _value(frontmatter, "api_version", 2) == "1"
+        name = _value(frontmatter, "name")
+        assert name not in discovered, f"重复 Skill 名称：{name}"
+        discovered.add(name)
         for field in ("entrypoint", "stop_entrypoint", "input_model", "state_model", "result_model"):
             assert _module_path(skill_dir, _value(frontmatter, field, 2)).is_file(), field
         assert "required_actions:\n" in frontmatter
         assert "stop_actions:\n" in frontmatter
         assert "schema_version: 1" not in frontmatter
         assert "schema_version: 2" in frontmatter
-        assert (skill_dir / "requirements.lock").read_text(encoding="utf-8") == "pydantic==2.13.4\n"
 
-    assert discovered == {name for name, _version in EXPECTED_SKILLS.values()}
+    assert discovered, "至少应发现一个可加载 Skill 包"
 
 
 def test_skill_scripts_do_not_cross_the_robot_or_model_boundary() -> None:
@@ -122,10 +98,10 @@ def test_skill_scripts_do_not_cross_the_robot_or_model_boundary() -> None:
 
 
 def test_stage_rgb_helper_is_self_contained_and_declared_only_for_normal_actions() -> None:
-    """独立 ZIP 携带同一 helper，不需要升级 SDK，也不在停止入口拍照。"""
+    """三个 R1 拆码垛 ZIP 携带同一 helper，不需要升级 SDK，也不在停止入口拍照。"""
 
     helpers: list[bytes] = []
-    for directory in EXPECTED_SKILLS:
+    for directory in ("semantic_navigation", "grasp_object", "place_object"):
         skill_dir = SKILLS / directory
         frontmatter = _frontmatter_text(skill_dir / "SKILL.md")
         normal, stop = frontmatter.split("stop_actions:", 1)

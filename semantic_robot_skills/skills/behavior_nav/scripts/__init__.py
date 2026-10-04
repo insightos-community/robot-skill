@@ -1,0 +1,1 @@
+"""World-point navigation Skill."""

@@ -1,0 +1,20 @@
+{
+  "left": {
+    "left_arm_joint1": -0.04499999999999993,
+    "left_arm_joint2": 1.2464370441823044e-10,
+    "left_arm_joint3": 2.6730969719532273e-10,
+    "left_arm_joint4": -1.5707963267948966,
+    "left_arm_joint5": -0.0013849301811922708,
+    "left_arm_joint6": 4.1137941227749165e-06,
+    "left_arm_joint7": 0.0029701108753598603
+  },
+  "right": {
+    "right_arm_joint1": -0.04499999999999993,
+    "right_arm_joint2": 1.2464249984137157e-10,
+    "right_arm_joint3": 2.673070942930285e-10,
+    "right_arm_joint4": -1.5707963267948966,
+    "right_arm_joint5": -0.0013849167969980237,
+    "right_arm_joint6": 4.113714364891986e-06,
+    "right_arm_joint7": 0.0029700819540113468
+  }
+}

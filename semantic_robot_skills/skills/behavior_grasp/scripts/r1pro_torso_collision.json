@@ -1,0 +1,268 @@
+{
+  "self_collision_buffer": {
+    "base_link": 0.02
+  },
+  "self_collision_ignore": {
+    "base_link": [
+      "torso_link1",
+      "wheel_motor_link1",
+      "wheel_motor_link2",
+      "wheel_motor_link3"
+    ],
+    "left_arm_link1": [
+      "left_arm_link2"
+    ],
+    "left_arm_link2": [
+      "left_arm_link3"
+    ],
+    "left_arm_link3": [
+      "left_arm_link4"
+    ],
+    "left_arm_link4": [
+      "left_arm_link5"
+    ],
+    "left_arm_link5": [
+      "left_arm_link6",
+      "left_arm_link7"
+    ],
+    "left_arm_link6": [
+      "left_arm_link7"
+    ],
+    "left_arm_link7": [
+      "left_gripper_link"
+    ],
+    "left_gripper_finger_link1": [
+      "left_gripper_finger_link2",
+      "attached_object_left_eef_link"
+    ],
+    "left_gripper_finger_link2": [
+      "attached_object_left_eef_link"
+    ],
+    "left_gripper_link": [
+      "left_realsense_link",
+      "left_gripper_finger_link1",
+      "left_gripper_finger_link2"
+    ],
+    "right_arm_link1": [
+      "right_arm_link2"
+    ],
+    "right_arm_link2": [
+      "right_arm_link3"
+    ],
+    "right_arm_link3": [
+      "right_arm_link4"
+    ],
+    "right_arm_link4": [
+      "right_arm_link5"
+    ],
+    "right_arm_link5": [
+      "right_arm_link6",
+      "right_arm_link7"
+    ],
+    "right_arm_link6": [
+      "right_arm_link7"
+    ],
+    "right_arm_link7": [
+      "right_gripper_link"
+    ],
+    "right_gripper_finger_link1": [
+      "right_gripper_finger_link2",
+      "attached_object_right_eef_link"
+    ],
+    "right_gripper_finger_link2": [
+      "attached_object_right_eef_link"
+    ],
+    "right_gripper_link": [
+      "right_realsense_link",
+      "right_gripper_finger_link1",
+      "right_gripper_finger_link2"
+    ],
+    "torso_link1": [
+      "torso_link2"
+    ],
+    "torso_link2": [
+      "torso_link3",
+      "torso_link4"
+    ],
+    "torso_link3": [
+      "torso_link4"
+    ],
+    "torso_link4": [
+      "left_arm_link1",
+      "right_arm_link1",
+      "zed_link"
+    ]
+  },
+  "collision_spheres": {
+    "base_link": [
+      {
+        "center": [
+          0.1,
+          -0.205,
+          0.165
+        ],
+        "radius": 0.15
+      },
+      {
+        "center": [
+          0.1,
+          0.0,
+          0.165
+        ],
+        "radius": 0.15
+      },
+      {
+        "center": [
+          0.1,
+          0.205,
+          0.165
+        ],
+        "radius": 0.15
+      },
+      {
+        "center": [
+          -0.08,
+          -0.155,
+          0.175
+        ],
+        "radius": 0.165
+      },
+      {
+        "center": [
+          -0.08,
+          0.155,
+          0.175
+        ],
+        "radius": 0.165
+      },
+      {
+        "center": [
+          -0.23,
+          0,
+          0.185
+        ],
+        "radius": 0.18
+      }
+    ],
+    "torso_link1": [
+      {
+        "center": [
+          0,
+          0,
+          0.014
+        ],
+        "radius": 0.1
+      },
+      {
+        "center": [
+          0,
+          0,
+          0.127
+        ],
+        "radius": 0.07
+      },
+      {
+        "center": [
+          0,
+          0,
+          0.219
+        ],
+        "radius": 0.07
+      },
+      {
+        "center": [
+          0,
+          0,
+          0.29
+        ],
+        "radius": 0.07
+      },
+      {
+        "center": [
+          0,
+          0,
+          0.375
+        ],
+        "radius": 0.07
+      },
+      {
+        "center": [
+          0,
+          0,
+          0.419
+        ],
+        "radius": 0.07
+      }
+    ],
+    "torso_link2": [
+      {
+        "center": [
+          0,
+          0,
+          0.02
+        ],
+        "radius": 0.1
+      },
+      {
+        "center": [
+          0,
+          0,
+          0.16
+        ],
+        "radius": 0.1
+      },
+      {
+        "center": [
+          0,
+          0,
+          0.3
+        ],
+        "radius": 0.1
+      }
+    ],
+    "torso_link4": [
+      {
+        "center": [
+          0,
+          0,
+          0.07455
+        ],
+        "radius": 0.13
+      },
+      {
+        "center": [
+          0.005,
+          0,
+          0.245
+        ],
+        "radius": 0.15
+      },
+      {
+        "center": [
+          0.002,
+          0.126,
+          0.305
+        ],
+        "radius": 0.08
+      },
+      {
+        "center": [
+          0.002,
+          -0.126,
+          0.305
+        ],
+        "radius": 0.08
+      }
+    ],
+    "zed_link": [
+      {
+        "center": [
+          0.06,
+          0.03,
+          -0.065
+        ],
+        "radius": 0.11
+      }
+    ]
+  }
+}

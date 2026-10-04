@@ -1,46 +1,58 @@
-# Semantic Robot Skill
+# Semantic Robot Skills
 
-[English](README.md) | [简体中文](README.zh-CN.md)
+本仓库包含正式 `semantic_robot_skill_sdk`、隔离 Python Worker，以及三个可恢复
+Robot Skill：`semantic-navigation`、`grasp-object`、`place-object`。
 
-🧩 Task-level robot skills and their Python worker SDK. Skills coordinate actions through the execution context; they do not replace AbilityFramework, Robot SDK, or the physics Runtime.
+每个 Skill 只保留 `SKILL.md`、`scripts/`、`references/`、`tests/`（发布包可省略）和
+`requirements.lock`。Pilot 只扫描 `SKILL.md` frontmatter；仓库不再维护
+`robot-skill.yaml` 或独立 Skill Library。
 
-## Structure
+Skill 负责固定 Stage、期望判断、局部恢复和类型化 Agent 请求。它只能产生声明过的
+Action，不能导入 Robot SDK、ROS、MuJoCo、Isaac 或模型库。Pilot 用
+`python -m semantic_robot_skill_sdk.worker --skill-dir <dir>` 启动隔离 Worker，stdin/stdout
+只传 JSON-RPC 2.0；图像、点云和视频只传 Artifact 引用。
 
-- `semantic_robot_skill_sdk/` — worker protocol, execution context, and SDK.
-- `semantic_robot_skills/skills/` — navigation, grasp-object, and place-object packages.
-- `tests/` — worker/SDK tests; individual skills also contain tests.
+当前测试使用 `MockSkillContext`，覆盖稳定 Action key、Feedback 游标、checkpoint、局部
+恢复、停止和三 Skill 拆码垛闭环。真机和仿真后端未接入时由 Pilot/Ability 明确失败。
 
-## 🛠 Build and test
+## 构建与安装
 
-Requires Python **3.11+** and uv; quick-start uses **3.13**.
+Robot Skill Runtime SDK 以 Wheel 安装到 Pilot 创建的 Skill 环境。三个具体 Skill
+分别打包为包含 `SKILL.md` 和脚本的 Zip，由 Semantic Server Robot Skill Registry
+保存和下发；它们不随 R1 Pro 机器人类型包预装。
 
 ```bash
-uv venv --python 3.13
-uv pip install -e . pytest
-PATH="$PWD/.venv/bin:$PATH" make test
-uv build --wheel
+python -m build --wheel
+make test
 ```
 
-The output `dist/semantic_robot_skill_sdk-*.whl` contains the worker SDK. It is **not** the distributable collection of Robot Skills.
+构建产物名为 `semantic_robot_skill_sdk-<version>-py3-none-any.whl`，Wheel 只包含
+`semantic_robot_skill_sdk`。仓库中的三个具体 Skill 不进入这个 Wheel，避免绕过
+Server Registry 的安装、启用和版本选择。
 
-## Package and deploy
+正式安装流程为：
 
-Each Skill is a separate package with `SKILL.md`, entry code, and locked requirements. Quick-start uses Semantic Framework's `scripts/refresh_v050_mujoco.py` to package and publish the three Skills to the Server registry after Server starts.
+```text
+Server 发布 Skill 包
+→ 选择 Robot 与精确版本
+→ Pilot 下载到 staging
+→ 校验 SKILL.md、入口、required_actions 和 requirements.lock
+→ 创建独立环境并安装 Skill SDK Wheel
+→ 原子切换 active 版本
+```
 
-Robot Bundles supply the execution environment; their required Skill IDs and versions must match the registry. The worker speaks a machine protocol over standard input/output and is normally launched by the managed runtime, not used as an interactive shell.
+同型号 Robot 可以安装不同的 Skill 版本。升级 Robot SDK、Ability 或 Pilot 不会隐式
+替换 Robot Skill；正在执行的 Worker 始终使用启动时固定的 Skill 目录和环境。
 
-## Troubleshooting
+## 本地调试
 
-“Robot Skill not installed” means the required registry package/version is missing. Building the SDK Wheel or activating a Robot Bundle does not fix that by itself: publish the exact requested Skill version and retry.
+Worker 入口只用于 Pilot 或 Runtime 测试：
 
-Start with Fake/simulation tests. A Skill may cause physical motion when connected to hardware; only run it in a controlled environment.
+```bash
+python -m semantic_robot_skill_sdk.worker --skill-dir \
+  semantic_robot_skills/skills/grasp_object
+```
 
-[Detailed technical reference](README.reference.md) · [Skill packages](semantic_robot_skills/skills/)
-
-## License
-
-Copyright 2026 InsightOS. First-party code: [Apache-2.0](LICENSE). See [NOTICE](NOTICE) and [license scope](LICENSE_SCOPE.md) for third-party components and assets.
-
-## Reproducible platform builds
-
-See [glibc, musl and macOS build instructions](README.build.md) for pinned source revisions, exact scripts, tool requirements, local commands, CI reproduction and platform support boundaries.
+stdin/stdout 专用于 JSON-RPC。直接运行 Worker 不会连接 Robot，也不能绕过 Pilot
+调用 Ability。完整流程验证必须由 Server 下发 Skill，并通过 Pilot 的 Action 路由调用
+当前 Robot 的精确 Ability 实例。

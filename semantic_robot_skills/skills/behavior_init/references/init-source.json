@@ -1,0 +1,43 @@
+{
+  "keep_current_torso": true,
+  "action": "motion.move_arm_joint",
+  "timeout_seconds_per_arm": 150,
+  "pitch_formula": "torso_joint1 + torso_joint2 - torso_joint3",
+  "default_arm_posture": "down",
+  "postures": {
+    "down": {
+      "source": "semantic-ability/r1pro-behavior-ability/src/r1pro_behavior_abilities/configs/r1pro-scene.json",
+      "field": "robot.reset_joint_pos",
+      "arm_joint_positions_rad": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "raised": {
+      "source": "behavior-init geometry.py at commit 405094f (previous prepare_arms posture)",
+      "left_arm_joint_positions_rad": [
+        0,
+        0.6,
+        0,
+        "-(pi / 2 + torso_pitch_rad)",
+        0,
+        0,
+        0
+      ],
+      "right_arm_joint_positions_rad": [
+        0,
+        -0.6,
+        0,
+        "-(pi / 2 + torso_pitch_rad)",
+        0,
+        0,
+        0
+      ]
+    }
+  }
+}

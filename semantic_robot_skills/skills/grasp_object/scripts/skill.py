@@ -1,18 +1,3 @@
-# Copyright 2026 InsightOS
-# SPDX-License-Identifier: Apache-2.0
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 """去码垛抓取 Robot Skill 的 Stage 脚本。
 
 脚本负责保存 Stage 期望、消费原子能力反馈、执行有限的局部恢复，并在超出
@@ -22,6 +7,7 @@ Pilot 后面的能力实现负责。
 
 from __future__ import annotations
 
+import re
 from typing import TypeVar
 
 from pydantic import BaseModel, ValidationError
@@ -766,7 +752,14 @@ def _missing_preflight_contact_tools(
         "hook_force_low",
         "clamp_force_low",
     )
-    reasons = message.rsplit("禁止开始抬升: ", 1)[-1].split("; ")
+    # Ability 用 ", " 拼接多条 blocking reason（manipulator_motion.py 的
+    # LiftHeldObject 预检），只按 "; " 拆分会把两条原因当成一个 token，
+    # 白名单校验必然失败，单侧重入位恢复会因此永不触发。
+    reasons = [
+        item.strip()
+        for item in re.split(r"[,;]\s*", message.rsplit("禁止开始抬升: ", 1)[-1])
+        if item.strip()
+    ]
     recoverable = {f"{ref}:{marker}" for ref in tool_refs for marker in missing_markers}
     if not reasons or any(reason not in recoverable for reason in reasons):
         return []

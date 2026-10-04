@@ -1,0 +1,61 @@
+"""Checkpoint every Action, including a terminal button-not-found result."""
+
+from semantic_robot_skill_sdk import Action, ActionResult, SkillContext
+
+from .models import State
+
+
+class ActionFailed(Exception):
+    """Failure has been reported to the Worker."""
+
+
+async def execute(
+    ctx: SkillContext,
+    state: State,
+    key: str,
+    action: Action,
+    *,
+    allow_not_found: bool = False,
+    allow_joint_timeout: bool = False,
+) -> ActionResult:
+    ctx.check_cancelled()
+    result = state.results.get(key)
+    if result is None:
+        state.stage = key
+        ctx.checkpoint(state)
+        ctx.report(
+            "stage.running", stage=key, stage_status="running", summary=action.type
+        )
+        result = await ctx.execute(key=key, action=action)
+        ctx.check_cancelled()
+        state.results[key] = result
+        state.evidence_refs = list(
+            dict.fromkeys(state.evidence_refs + result.evidence_refs)
+        )
+        ctx.checkpoint(state)
+    missing = (
+        allow_not_found
+        and result.status == "failed"
+        and result.error_code == "OBJECT_NOT_FOUND"
+    )
+    pending_verification = (allow_joint_timeout and action.type == "motion.move_arm_joint"
+                            and result.status == "failed" and result.error_code == "command_timeout")
+    if pending_verification:
+        ctx.report("stage.verifying", stage=key, stage_status="running",
+                   summary="关节命令已超时终止，读取实测关节和末端位姿复核", evidence_refs=result.evidence_refs)
+        return result
+    if result.status != "succeeded" and not missing:
+        ctx.fail(
+            result.error_code or "ACTION_NOT_COMPLETED",
+            result.error_message or f"{action.type}: {result.status}",
+            state.evidence_refs,
+        )
+        raise ActionFailed
+    ctx.report(
+        "stage.completed",
+        stage=key,
+        stage_status="completed",
+        summary="腕部图像未检测到按钮" if missing else action.type,
+        evidence_refs=result.evidence_refs,
+    )
+    return result

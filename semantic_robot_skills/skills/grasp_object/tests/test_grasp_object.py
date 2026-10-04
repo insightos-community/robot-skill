@@ -1,18 +1,3 @@
-# Copyright 2026 InsightOS
-# SPDX-License-Identifier: Apache-2.0
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 """去码垛抓取 Robot Skill 的最小端到端测试。"""
 
 from __future__ import annotations
@@ -329,6 +314,93 @@ def test_lift_preflight_load_loss_reseats_current_candidate_once(reason: str) ->
     assert [item["tool_ref"] for item in reclose["parameters"]["tools"]] == [
         TOOL_REFS[1]
     ]
+
+
+def test_lift_preflight_reseats_with_real_multi_reason_message() -> None:
+    """LiftHeldObject 真实输出里一侧会同时缺接触、受力偏低，两条原因用 ", " 拼接。
+
+    只按 "; " 拆分会把整串当成一个 token，白名单校验失败后单侧重入位永不触发，
+    抓取直接升级给 Agent 并中止（BUG-002 的现场形状）。
+    """
+
+    skill_input = GraspObjectInput(target=TargetHint(object_ref=OBJECT_REF))
+    candidate = _candidate("candidate-lift-multi-reason", x=0.82, score=1.0)
+    state = GraspObjectState(
+        stage="lift_and_verify",
+        active_strategy="direct_bilateral",
+        target_revision="scene-7",
+        target_pose=_pose(0.82, 0.0, 0.20, "scene-7"),
+        target_extent_m=(0.42, 0.30, 0.24),
+        candidates=[candidate],
+        selected_candidate_id=candidate.candidate_id,
+        object_held=True,
+        grasp_attempts=1,
+    )
+    context = _context(skill_input)
+    context.queue_action(
+        "motion.lift_held_object",
+        ActionResult(
+            status="failed",
+            physical_effect="none",
+            error_code="LOAD_NOT_STABLE",
+            error_message=(
+                "双侧夹具接触、受力或传感状态不完整，禁止开始抬升: "
+                "component://tool/right:hook_contact_missing, "
+                "component://tool/right:hook_force_low"
+            ),
+        ),
+    )
+    context.queue_action(
+        "motion.move_end_effector",
+        ActionResult(status="succeeded", physical_effect="confirmed"),
+    )
+    context.queue_action(
+        "gripper.close",
+        ActionResult(status="succeeded", physical_effect="confirmed"),
+    )
+    _queue_tool_load(context, list(TOOL_REFS))
+
+    asyncio.run(
+        _lift_and_verify(
+            context,
+            DepalletizingGraspController(),
+            skill_input,
+            state,
+        )
+    )
+
+    assert not any(event["type"] == "agent_requested" for event in context.events)
+    assert state.grasp_attempts == 2
+    started = [event for event in context.events if event["type"] == "action_started"]
+    reseat = next(
+        event
+        for event in started
+        if event["key"].endswith(":lift-preflight-reseat")
+        and event["action"] == "motion.move_end_effector"
+    )
+    assert [item["tool_ref"] for item in reseat["parameters"]["targets"]] == [
+        TOOL_REFS[1]
+    ]
+
+
+def test_missing_preflight_contact_tools_rejects_unknown_reason() -> None:
+    """不可恢复的原因必须保持整体拒绝，不能因为解析变宽就盲目补座。"""
+
+    assert _missing_preflight_contact_tools(
+        ActionResult(
+            status="failed",
+            error_code="LOAD_NOT_STABLE",
+            error_message=(
+                "双侧夹具接触、受力或传感状态不完整，禁止开始抬升: "
+                "component://tool/right:sensor_fault"
+            ),
+        ),
+        list(TOOL_REFS),
+    ) == []
+    assert _missing_preflight_contact_tools(
+        ActionResult(status="failed", error_code="LOAD_NOT_STABLE", error_message=""),
+        list(TOOL_REFS),
+    ) == []
 
 
 def _pose(x: float, y: float, z: float, revision: str) -> Pose3D:

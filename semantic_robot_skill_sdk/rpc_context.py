@@ -1,22 +1,8 @@
-# Copyright 2026 InsightOS
-# SPDX-License-Identifier: Apache-2.0
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 """Python Worker 内使用的 SkillContext 实现。"""
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 from typing import Any, AsyncIterator, TypeVar
 
@@ -59,8 +45,14 @@ class RpcActionHandle:
                 self._context._feedback[self._key] = feedback.sequence
                 self._context._remember(feedback.observations)
                 yield feedback
-            if bool(value.get("terminal")) or not items:
+            if bool(value.get("terminal")):
                 return
+            if not items:
+                # 暂无反馈不等于动作结束，例如模型仍在推理。保持流开放，
+                # 否则 Skill 会转入阻塞的 result()，丢失期间的验收与安全检查。
+                # 等待让出事件循环；停止通知仍可通过原有 RPC 通道到达。
+                self._context.check_cancelled()
+                await asyncio.sleep(0.05)
 
     async def stop(self, reason: str) -> ActionResult:
         value = self._context._call(
